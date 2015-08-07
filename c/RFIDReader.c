@@ -41,10 +41,10 @@ void GetTextResult()
 
 	while (serialDataAvail (fd))
 	{
-		printf ("\x1B[32m%c", serialGetchar (fd)) ;
+		printf ("%c", serialGetchar (fd)) ;
 		fflush (stdout) ;
 	}
-	printf("\x1B[0m\n\n");
+	printf("\n\n");
 }
 
 
@@ -91,7 +91,7 @@ int main ()
 
 
 
-char option, tagOption, pollDelay;
+char option, tagOption;
 int noTag;
 
 
@@ -153,7 +153,7 @@ do {
 				if (result == 0xD6)
 				{
 					noTag = 0;
-					printf ("\n\x1B[32mTag present.\x1B[0m\n\n");
+					printf ("\nTag present.\n\n");
 				}
 			}
 		}
@@ -170,7 +170,7 @@ do {
 
 		delay(100);
 
-		printf("\n\n\x1B[32mFACTORY RESET COMPLETE \x1B[0m\n\n");
+		printf("\n\nFACTORY RESET COMPLETE \n\n");
 
 
 		break;
@@ -199,17 +199,17 @@ do {
 			result = serialGetchar(fd);
 			if (result == 0xC0)
 			{
-				printf("\n\n\x1B[32mPolling delay changed .......\x1B[0m\n\n");
+				printf("\n\nPolling delay changed .......\n\n");
 			}
 			else
 			{
-				printf("\n\n\x1B[32mUnexpected reply >%X< \x1B[0m\n\n", result);
+				printf("\n\nUnexpected reply >%X< \n\n", result);
 				while (serialDataAvail (fd))
 				{
-					printf ("\x1B[32m %X", serialGetchar (fd)) ;
+					printf (" %X", serialGetchar (fd)) ;
 					fflush (stdout) ;
 				}
-				printf("\x1B[0m\n\n");
+				printf("\n\n");
 			}
 		}
 		break;
@@ -217,71 +217,72 @@ do {
 
 
 
-            case 'v': // Select the reader operating mode
+		case 'v': // Select the reader operating mode
 
-			printf("\n\nSetting Reader Operating Tag Modde.......\n\n");
+		printf("\n\nSetting Reader Operating Tag Modde.......\n\n");
 
+		{
+			printf("\n\t*********************************************\n");
+			printf("\ta - Hitag H2\n");
+			printf("\tb - Hitag H1/S (factory default)\n");
+			printf("\tc - EM/MC2000\n\n");
+
+			printf("\tPlease select tag type .....>");
+
+			tagOption = getchar();
+			getchar(); // Needed to consume the carriage return.
+
+			switch (tagOption)
 			{
-				printf("\t*********************************************\n");
-				printf("\ta - Hitag H2\n");
-				printf("\tb - Hitag H1/S (factory default)\n");
-				printf("\tc - EM/MC2000\n\n");
+				case 'a':
+					WaitForCTS();
 
-				printf("\tPlease select tag type .....>");
+					serialPutchar(fd, 0x76);
+					serialPutchar(fd, 0x01);  // 0x01 = H2
+					break;
 
-				tagOption = getchar();
-				getchar(); // Needed to consume the carriage return.
 
-				switch (tagOption)
+				case 'b':
+					WaitForCTS();
+
+					serialPutchar(fd, 0x76);
+					serialPutchar(fd, 0x02);  // 0x02 = H2
+					break;
+
+				case 'c':
+					WaitForCTS();
+
+					serialPutchar(fd, 0x76);
+					serialPutchar(fd, 0x03);// 0x03 = EM/MC2000
+					break;
+
+				default:
+					printf("\n\tInvalid option.  Please try again...\n\n");
+					;// wait until a valid entry has been selected.
+
+			}
+
+			delay(100);
+			while ( serialDataAvail(fd) )
+			{
+				char result;
+				result = serialGetchar(fd);
+				if (result == 0xC0)
 				{
-					case 'a':
-						WaitForCTS();
-
-						serialPutchar(fd, 0x76);
-						serialPutchar(fd, 0x01);  // 0x01 = H2
-						break;
-
-
-					case 'b':
-						WaitForCTS();
-
-						serialPutchar(fd, 0x76);
-						serialPutchar(fd, 0x02);  // 0x02 = H2
-						break;
-
-					case 'c':
-						WaitForCTS();
-
-						serialPutchar(fd, 0x76);
-						serialPutchar(fd, 0x03);// 0x03 = EM/MC2000
-						break;
-
-					default:
-						// wait until a valid entry has been selected.
-
+					printf("\n\nReader Operating Tag Mode changed .......\n\n");
 				}
-
-				delay(100);
-				while ( serialDataAvail(fd) )
+				else
 				{
-					char result;
-					result = serialGetchar(fd);
-					if (result == 0xC0)
+					printf("\n\nUnexpected reply >%X< \n\n", result);
+					while (serialDataAvail (fd))
 					{
-						printf("\n\n\x1B[32mReader Operating Tag Mode changed .......\x1B[0m\n\n");
+						printf (" %X", serialGetchar (fd)) ;
+						fflush (stdout) ;
 					}
-					else
-					{
-						printf("\n\n\x1B[32mUnexpected reply >%X< \x1B[0m\n\n", result);
-						while (serialDataAvail (fd))
-						{
-							printf ("\x1B[32m %X", serialGetchar (fd)) ;
-							fflush (stdout) ;
-						}
-						printf("\x1B[0m\n\n");
-					}
+					printf("\n\n");
 				}
-
+			}
+		}
 
 
 
@@ -301,7 +302,7 @@ do {
 		{
 			WaitForCTS();
 
-	                serialPutchar(fd, 0x52);
+	        serialPutchar(fd, 0x52);
  			serialPutchar(fd, 0x00); // Tag Page 00 - both H1/S and H2 should work here
 
 			delay(100); // ??? Need to wait otherwise the command does not work
@@ -313,14 +314,14 @@ do {
 				if (result == 0xD6)
 				{
 					noTag = 0;
-					printf ("\n\x1B[32mTag present.\x1B[0m\n\n");
+					printf ("\nTag present.\n\n");
 					while (serialDataAvail (fd))
 					{
-						printf ("\x1B[32m %X", serialGetchar (fd)) ;
+						printf (" %X", serialGetchar (fd)) ;
 						fflush (stdout) ;
 					}
 					noTag = 0;
-					printf("\x1B[0m\n\n");
+					printf("\n\n");
 				}
 				else
 				{
@@ -354,14 +355,14 @@ do {
 				if (result == 0xD6)
 				{
 					noTag = 0;
-					printf ("\n\x1B[32mTag present.\x1B[0m\n\n");
+					printf ("\nTag present.\n\n");
 					while (serialDataAvail (fd))
 					{
-						printf ("\x1B[32m %X", serialGetchar (fd)) ;
+						printf (" %X", serialGetchar (fd)) ;
 						fflush (stdout) ;
 					}
 					noTag = 0;
-					printf("\x1B[0m\n\n");
+					printf("\n\n");
 				}
 				else
 				{
@@ -385,6 +386,8 @@ do {
        fflush (stdout) ;
 
      } while(option != 'e');
+
+     serialClose(fd);
 
 return(0);
 
