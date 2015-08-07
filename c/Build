@@ -1,0 +1,3 @@
+
+gcc -Wall -o RFIDReader RFIDReader.c -lwiringPi
+
