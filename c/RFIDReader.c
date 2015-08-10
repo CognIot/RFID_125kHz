@@ -13,7 +13,7 @@
 #include <wiringPi.h>
 #include <wiringSerial.h>
 
-#define GPIO17 0
+#define GPIO17 0		// This deines the GPIO reference for wiringPi
 
 // Define global variables
 
@@ -24,7 +24,9 @@ int fd;	// File handle for connection to the serial port.
 
 void WaitForCTS()
 {
-	// Generic call to wait for the CTS going
+	// Generic call to wait for the CTS going high
+	// CTS is implemented via the use of the GPIO as the UART on the
+	// Pi doen't have any control lines.
 	serialFlush(fd);
 
 	while (digitalRead(GPIO17) == HIGH)
@@ -46,6 +48,29 @@ void GetTextResult()
 	}
 	printf("\n\n");
 }
+
+
+
+int GetAntennaStatus()
+{
+	// Perform a firmware read to check the status of the antenna
+
+	WaitForCTS();
+    serialPutchar(fd, 0x53);  // Send any command - this happens to be the one to check if a tag is present
+	delay(100);
+
+	if ((serialGetchar(fd) & 0x20) == 0x20 )  // Checking bit 5.  If set, indicates antenna fault
+	{
+		printf("ERROR : ANTENNA or Eprom fault. Please check the antenna is correctly installed.\n\n");
+		return 1;  // return value set to indicate error
+	}
+	else
+	{
+		return 0;
+	}
+
+}
+
 
 
 
@@ -72,20 +97,28 @@ int main ()
 // GPIO22
 //
 
-  pinMode(GPIO17,INPUT);
+  pinMode(GPIO17,INPUT);	// We are using GPIO17 as the pin to identify the "CTS" function
 
 
 
-  if ((fd = serialOpen ("/dev/ttyAMA0", 9600)) < 0)
+  if ((fd = serialOpen ("/dev/ttyAMA0", 9600)) < 0)  // Try to open a connection to the serial port
   {
-    fprintf (stderr, "Unable to open serial device: %s\n", strerror (errno)) ;
+   fprintf (stderr, "Unable to open serial device: %s\n", strerror (errno)) ;
     return 1 ;
   }
   else
   {
   	// We have opened communications with the onboard Serial device
-	printf("Opened communications with PirFix.\n");
+	int antennaOK = 0;
 
+	printf("Opened communications with PirFix.\n");  // Communications opened successfully
+
+	antennaOK = GetAntennaStatus();  // Check status of the antenna.
+
+	if (antennaOK ==1)
+	{
+		return 1; // if there is an antenna fault, exit with a non-zero return code
+	}
   }
 
 
@@ -96,6 +129,7 @@ int noTag;
 
 
 do {
+	printf(" \n\n");
 	printf("**************************************************************************\n");
 	printf("Available commands: -\n\n");
 	printf("z - Display firmware version information\n");
@@ -119,157 +153,87 @@ do {
 
             case 'z': // Read the firmware version
 
-		printf("\nRead Firmware Details - Reading device..>\n\n");
+			printf("\nRead Firmware Details - Reading device..>\n\n");
 
-		WaitForCTS();
-
-                serialPutchar(fd, 0x7A); // Send 'z' to the PirFix
-
-		delay(100); // ??? Need to wait otherwise the command does not work
-
-		GetTextResult();
-
-		break;
-
-
-	   case 'S': // Read the status of the RFID device
-
-		noTag = 1;
-
-		printf("\nWaiting for a tag ....\n");
-
-		while (noTag == 1)
-		{
 			WaitForCTS();
 
-			serialPutchar(fd, 0x53); // Send 'S' to the PirFix
+            serialPutchar(fd, 0x7A); // Send 'z' to the PirFix
 
 			delay(100); // ??? Need to wait otherwise the command does not work
 
-			while ( serialDataAvail(fd) )
+			GetTextResult();
+
+			break;
+
+
+		case 'S': // Read the status of the RFID device
+
+			noTag = 1;
+
+			printf("\nWaiting for a tag ....\n");
+
+			while (noTag == 1)
 			{
-				char result;
-				result = serialGetchar(fd);
-				if (result == 0xD6)
+				WaitForCTS();
+
+				serialPutchar(fd, 0x53); // Send 'S' to the PirFix
+
+				delay(100); // ??? Need to wait otherwise the command does not work
+
+				while ( serialDataAvail(fd))  // Whilst data is being sent back from the device
 				{
-					noTag = 0;
-					printf ("\nTag present.\n\n");
+					char result;
+					result = serialGetchar(fd);	// Get each character
+					if (result == 0xD6)  // confirm that the tag is present, valid and no errors
+					{
+						noTag = 0;		// set this so the outer while loop can terminate
+						printf ("\nTag present.\n\n");
+					}
 				}
 			}
-		}
-		break;
+			break;
 
 
-            case 'F': // Perform a factory reset
+        case 'F': // Perform a factory reset
 
-		printf("\nPerforming a factory reset ....\n");
+			printf("\nPerforming a factory reset ....\n");
 
-		serialPutchar(fd, 0x46);
-		serialPutchar(fd, 0x55);
-		serialPutchar(fd, 0xAA);
+			serialPutchar(fd, 0x46);	// this command sequence is
+			serialPutchar(fd, 0x55);	//
+			serialPutchar(fd, 0xAA);	// required to force a factory reset.
 
-		delay(100);
+			delay(100);
 
-		printf("\n\nFACTORY RESET COMPLETE \n\n");
+			printf("\n\nFACTORY RESET COMPLETE \n\n");
 
 
-		break;
+			break;
 
 
 	   case 'P': // Program the internal EEPROM Polling delay
 
-		printf("\n\nSetting Polling delay .......\n\n");
+			printf("\n\nSetting Polling delay .......\n\n");
 
-		WaitForCTS();
+			WaitForCTS();
 
-		serialPutchar(fd, 0x50);
-		serialPutchar(fd, 0x00);
-		//serialPutchar(fd, 0x00); // 0x00 is no delay
-		//serialPutchar(fd, 0x20); // 0x20 is approx 20ms
-		//serialPutchar(fd, 0x40); // 0x40 is approx 65ms
-		serialPutchar(fd, 0x60); // 0x60 is approx 262ms
-		//serialPutchar(fd, 0x80); // 0x60 is approx 1 Seconds
-		//serialPutchar(fd, 0xA0); // 0x60 is approx 4 Seconds
-
-		delay(100);
-
-		while ( serialDataAvail(fd) )
-		{
-			char result;
-			result = serialGetchar(fd);
-			if (result == 0xC0)
-			{
-				printf("\n\nPolling delay changed .......\n\n");
-			}
-			else
-			{
-				printf("\n\nUnexpected reply >%X< \n\n", result);
-				while (serialDataAvail (fd))
-				{
-					printf (" %X", serialGetchar (fd)) ;
-					fflush (stdout) ;
-				}
-				printf("\n\n");
-			}
-		}
-		break;
-
-
-
-
-		case 'v': // Select the reader operating mode
-
-		printf("\n\nSetting Reader Operating Tag Modde.......\n\n");
-
-		{
-			printf("\n\t*********************************************\n");
-			printf("\ta - Hitag H2\n");
-			printf("\tb - Hitag H1/S (factory default)\n");
-			printf("\tc - EM/MC2000\n\n");
-
-			printf("\tPlease select tag type .....>");
-
-			tagOption = getchar();
-			getchar(); // Needed to consume the carriage return.
-
-			switch (tagOption)
-			{
-				case 'a':
-					WaitForCTS();
-
-					serialPutchar(fd, 0x76);
-					serialPutchar(fd, 0x01);  // 0x01 = H2
-					break;
-
-
-				case 'b':
-					WaitForCTS();
-
-					serialPutchar(fd, 0x76);
-					serialPutchar(fd, 0x02);  // 0x02 = H2
-					break;
-
-				case 'c':
-					WaitForCTS();
-
-					serialPutchar(fd, 0x76);
-					serialPutchar(fd, 0x03);// 0x03 = EM/MC2000
-					break;
-
-				default:
-					printf("\n\tInvalid option.  Please try again...\n\n");
-					;// wait until a valid entry has been selected.
-
-			}
+			serialPutchar(fd, 0x50);
+			serialPutchar(fd, 0x00);
+			//serialPutchar(fd, 0x00); // 0x00 is no delay
+			//serialPutchar(fd, 0x20); // 0x20 is approx 20ms
+			//serialPutchar(fd, 0x40); // 0x40 is approx 65ms
+			serialPutchar(fd, 0x60); // 0x60 is approx 262ms
+			//serialPutchar(fd, 0x80); // 0x60 is approx 1 Seconds
+			//serialPutchar(fd, 0xA0); // 0x60 is approx 4 Seconds
 
 			delay(100);
+
 			while ( serialDataAvail(fd) )
 			{
 				char result;
 				result = serialGetchar(fd);
 				if (result == 0xC0)
 				{
-					printf("\n\nReader Operating Tag Mode changed .......\n\n");
+					printf("\n\nPolling delay changed .......\n\n");
 				}
 				else
 				{
@@ -282,12 +246,82 @@ do {
 					printf("\n\n");
 				}
 			}
-		}
+			break;
 
 
 
 
-		break;
+		case 'v': // Select the reader operating mode
+
+			printf("\n\nSetting Reader Operating Tag Modde.......\n\n");
+
+			{
+				printf("\n\t*********************************************\n");
+				printf("\ta - Hitag H2\n");
+				printf("\tb - Hitag H1/S (factory default)\n");
+				printf("\tc - EM/MC2000\n\n");
+
+				printf("\tPlease select tag type .....>");
+
+				tagOption = getchar();
+				getchar(); // Needed to consume the carriage return.
+
+				switch (tagOption)
+				{
+					case 'a':
+						WaitForCTS();
+
+						serialPutchar(fd, 0x76);
+						serialPutchar(fd, 0x01);  // 0x01 = H2
+						break;
+
+
+					case 'b':
+						WaitForCTS();
+
+						serialPutchar(fd, 0x76);
+						serialPutchar(fd, 0x02);  // 0x02 = H1/S
+						break;
+
+					case 'c':
+						WaitForCTS();
+
+						serialPutchar(fd, 0x76);
+						serialPutchar(fd, 0x03);// 0x03 = EM/MC2000
+						break;
+
+					default:
+						printf("\n\tInvalid option.  Please try again...\n\n");
+						// wait until a valid entry has been selected.
+
+				}
+
+				delay(100);
+				while ( serialDataAvail(fd) )
+				{
+					char result;
+					result = serialGetchar(fd);
+					if (result == 0xC0)
+					{
+						printf("\n\nReader Operating Tag Mode changed .......\n\n");
+					}
+					else
+					{
+						printf("\n\nUnexpected reply >%X< \n\n", result);
+						while (serialDataAvail (fd))
+						{
+							printf (" %X", serialGetchar (fd)) ;
+							fflush (stdout) ;
+						}
+						printf("\n\n");
+					}
+				}
+			}
+
+
+
+
+			break;
 
 
 	   case 'R': // Read a page of data from the Tag
@@ -305,7 +339,7 @@ do {
 	        serialPutchar(fd, 0x52);
  			serialPutchar(fd, 0x00); // Tag Page 00 - both H1/S and H2 should work here
 
-			delay(100); // ??? Need to wait otherwise the command does not work
+			delay(100); //  Need to wait otherwise the command does not work
 
 			while ( serialDataAvail(fd) )
 			{
@@ -325,6 +359,7 @@ do {
 				}
 				else
 				{
+					// do nothing
 				}
 			}
 		}
@@ -343,7 +378,7 @@ do {
 		{
 			WaitForCTS();
 
-	                serialPutchar(fd, 0x74);
+	        serialPutchar(fd, 0x74);
  			serialPutchar(fd, 0x04); // Tag blocks 00-003 - only H1/S should work here
 
 			delay(100); // ??? Need to wait otherwise the command does not work
