@@ -3,6 +3,18 @@
  * RFIDReader.c:
  *	Example code on accessing the RFID Reader and reading data from tags
  *
+ *
+ *
+ * The code here is experimental, and is not intended to be used
+ * in a production environment. It demonstrates the basics of what is
+ * required to get the Raspberry Pi receiving RFID data and configuring
+ * the RFID Reader parameters.
+ *
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation as version 2 of the License.
+ *
  */
 
 #include <stdio.h>
@@ -13,7 +25,7 @@
 #include <wiringPi.h>
 #include <wiringSerial.h>
 
-#define GPIO17 0		// This deines the GPIO reference for wiringPi
+#define GPIO17 0		// This defines the GPIO reference for wiringPi
 
 // Define global variables
 
