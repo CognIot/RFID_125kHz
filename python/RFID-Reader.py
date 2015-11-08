@@ -18,10 +18,10 @@ import time
 import sys
 
 # set for GPIO Pin to use based on the jumper connection
-# GPIO_PIN = 0 # Jumper 2, also known as GPIO0
-GPIO_PIN = 1 # Jumper 1, also known as GPIO1
-# GPIO_PIN = 2 # Jumper 3, also known as GPIO0
-# GPIO_PIN = 3 # Jumper 4, also known as GPIO0
+# GPIO_PIN = 1 # Jumper 1, also known as GPIO18
+GPIO_PIN = 0 # Jumper 2, also known as GPIO0=17
+# GPIO_PIN = 2 # Jumper 3, also known as GPIO21 (Rv 1) or GPIO27 (Rv 2)
+# GPIO_PIN = 3 # Jumper 4, also known as GPIO22
 
 
 def WaitForCTS():

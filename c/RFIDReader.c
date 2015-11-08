@@ -25,7 +25,12 @@
 #include <wiringPi.h>
 #include <wiringSerial.h>
 
-#define GPIO17 0		// This defines the GPIO reference for wiringPi
+
+// set for GPIO Pin to use based on the jumper connection
+// #define GPIO_PIN 1       // Jumper 1, also known as GPIO18
+#define GPIO_PIN 0          // Jumper 2, also known as GPIO17
+// #define GPIO_PIN 2       // Jumper 3, also known as GPIO21 (Rv 1) or GPIO27 (Rv 2)
+// #define GPIO_PIN 3       // Jumper 4, also known as GPIO22
 
 // Define global variables
 
@@ -41,7 +46,7 @@ void WaitForCTS()
 	// Pi doen't have any control lines.
 	serialFlush(fd);
 
-	while (digitalRead(GPIO17) == HIGH)
+	while (digitalRead(GPIO_PIN) == HIGH)
 	{
 		// Do Nothing
 		// printf(".");
@@ -101,15 +106,7 @@ int main ()
     return 1 ;
   }
 
-// The PirFix can use one of the following GPIO pins configured as an input
-//
-// GPIO17
-// GPIO18
-// GPIO21
-// GPIO22
-//
-
-  pinMode(GPIO17,INPUT);	// We are using GPIO17 as the pin to identify the "CTS" function
+  pinMode(GPIO_PIN,INPUT);	// We are using GPIO_PIN as the pin to identify the "CTS" function
 
 
 
@@ -265,7 +262,7 @@ do {
 
 		case 'v': // Select the reader operating mode
 
-			printf("\n\nSetting Reader Operating Tag Modde.......\n\n");
+			printf("\n\nSetting Reader Operating Tag Mode.......\n\n");
 
 			{
 				printf("\n\t*********************************************\n");
