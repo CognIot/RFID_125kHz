@@ -13,7 +13,7 @@
 # e - Exit program
 
 
-# wiringpi is deprecated
+# wiringpi2 is deprecated
 import wiringpi
 import time
 import sys
