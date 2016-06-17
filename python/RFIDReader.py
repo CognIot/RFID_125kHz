@@ -217,7 +217,7 @@ def ChangeReaderOpMode(fd):
         print ("b - Hitag H1/S (factory default)")
         print ("c - EM/MC2000")
         # promt the user for a choice
-        choice = raw_input("Please select tag type .....:")
+        choice = input("Please select tag type .....:")
         # print ("choice: %s" % choice)  # Added for Debug purposes
         
         if choice =="a" or choice == "A":
@@ -277,7 +277,7 @@ print ("")
 comms = RFIDSetup()
 
 while True:
-    choice = raw_input ("Select Menu Option:")
+    choice = input ("Select Menu Option:")
 
     if choice == "H" or choice == "h":
         HelpText()
