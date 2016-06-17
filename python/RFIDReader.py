@@ -1,4 +1,4 @@
-#/usr/bin/env python
+#/usr/bin/env python3
 
 """
 Example code on accessing the RFID Reader 125kHz and reading data from tags
@@ -39,7 +39,7 @@ GPIO_PIN = 1 # Jumper 1, also known as GPIO18
 
 def WaitForCTS():
     # continually monitor the selected GPIO pin and wait for the line to go low
-    # print "Waiting for CTS" # Added for debug purposes
+    # print ("Waiting for CTS")     # Added for debug purposes
     while wiringpi2.digitalRead(GPIO_PIN):
         # do nothing
         time.sleep(0.001)
@@ -48,11 +48,11 @@ def WaitForCTS():
 def ReadText(fd):
     # read the data back from the serial line and return it as a string to the calling function
     qtydata = wiringpi2.serialDataAvail(fd)
-    # print "Amount of data: %d bytes" % qtydata # Added for debug purposes
+    # print ("Amount of data: %d bytes" % qtydata)   # Added for debug purposes
     response = ""
     while qtydata > 0:
         # while there is data to be read, read it back
-        # print "Reading data back %d" % qtydata #Added for Debug purposes
+        # print ("Reading data back %d" % qtydata)   #Added for Debug purposes
         response = response + chr(wiringpi2.serialGetchar(fd))
         qtydata = qtydata - 1   
     return response
@@ -60,10 +60,10 @@ def ReadText(fd):
 def ReadInt(fd):
     # read a single character back from the serial line
     qtydata = wiringpi2.serialDataAvail(fd)
-    # print "Amount of data: %s bytes" % qtydata  # Added for debug purposes
+    # print ("Amount of data: %s bytes" % qtydata)    # Added for debug purposes
     response = 0
     if qtydata > 0:
-        # print "Reading data back %d" % qtydata #Added for Debug purposes
+        # print ("Reading data back %d" % qtydata)   #Added for Debug purposes
         response = wiringpi2.serialGetchar(fd)
     return response
 
@@ -81,9 +81,9 @@ def RFIDSetup():
     
     if response == 0 and fd >0:
         # if wiringpi is setup and the opened channel is greater than zero (zero = fail)
-        print "PI setup complete on channel %d" %fd
+        print ("PI setup complete on channel %d" %fd)
     else:
-        print "Unable to Setup communications"
+        print ("Unable to Setup communications")
         sys.exit()
         
     return fd
@@ -91,42 +91,43 @@ def RFIDSetup():
 def ReadVersion(fd):
     # read the version from the RFID board
     WaitForCTS()
-    # print "Sending Read Version Command" #Added for Debug purposes
+    # print ("Sending Read Version Command")     #Added for Debug purposes
     wiringpi2.serialPuts(fd,"z")
     time.sleep(0.1)
     ans = ReadText(fd)
-    print "Response: %s" % ans
+    print ("Response: %s" % ans)
 
 def ReadTagStatus(fd):
     # read the RFID reader until a tag is present
     notag = True
     while notag:
         WaitForCTS()
-        # print "Sending Tag Status Command" #Added for Debug purposes
+        # print ("Sending Tag Status Command")   #Added for Debug purposes
         wiringpi2.serialPuts(fd,"S")
         time.sleep(0.1)
         ans = ReadInt(fd)
-        # print "Tag Status: %s" % hex(ans) # Added for Debug purposes
+        # print ("Tag Status: %s" % hex(ans))    # Added for Debug purposes
         if ans == int("0xD6", 16):
             # D6 is a positive response meaning tag present and read
             notag = False
-    print "Tag Status: %s" % hex(ans)
+    print ("Tag Status: %s" % hex(ans))
     return
 
 def FactoryReset(fd):
     # send the factory reset command
     WaitForCTS()
-    # print "Performing a factory reset ...." #Added for Debug purposes
+    # print ("Performing a factory reset ....") #Added for Debug purposes
     wiringpi2.serialPutchar(fd, 0x46)
     wiringpi2.serialPutchar(fd, 0x55)
     wiringpi2.serialPutchar(fd, 0xAA)
     time.sleep(0.1)
-    print "FACTORY RESET COMPLETE "
-    print ""
+    print ("FACTORY RESET COMPLETE ")
+    print ("")
+    return
 
 def SetPollingDalay(fd):
     # set the polling delay for the reader
-    print "Setting Polling delay ......."
+    print ("Setting Polling delay .......")
     WaitForCTS()
 
     wiringpi2.serialPutchar(fd, 0x50)
@@ -141,39 +142,40 @@ def SetPollingDalay(fd):
 
     time.sleep(0.1)
     ans = ReadInt(fd)
-    # print "Tag Status: %s" % hex(ans) # Added for Debug Purposes 
+    # print ("Tag Status: %s" % hex(ans))    # Added for Debug Purposes 
     if ans == int("0xC0", 16):
         # C0 is a positive result
-        print "Polling delay changed ......"
+        print ("Polling delay changed ......")
     else:
-        print "Unexpected response %s" % hex(ans)
+        print ("Unexpected response %s" % hex(ans))
         # flush any remaining characters from the buffer
         wiringpi2.serialFlush(fd)
+    return
 
 def ReadTagPageZero(fd):
     # read the tag page 00 command
     notag = True
 
-    print "Reading Tag Data Page 00......."
+    print ("Reading Tag Data Page 00.......")
 
-    print "Waiting for a tag ...."
+    print ("Waiting for a tag ....")
 
     notag = True
     while notag:
         WaitForCTS()
-        # print "Sending Tag Read Page Command" #Added for Debug purposes
+        # print ("Sending Tag Read Page Command")    #Added for Debug purposes
         wiringpi2.serialPutchar(fd, 0x52)
         wiringpi2.serialPutchar(fd, 0x00)
         time.sleep(0.1)
         ans = ReadInt(fd)
-        # print "Tag Status: %s" % hex(ans) #Added for Debug purposes
+        # print ("Tag Status: %s" % hex(ans))    #Added for Debug purposes
         if ans == int("0xD6", 16):
             # Tag present and read
             notag = False
-            # print "Tag Present" #Added for Debug purposes
+            # print ("Tag Present") #Added for Debug purposes
             ans = ReadText(fd)
-            print "Page 00"
-            print "-->%s<--" %ans
+            print ("Page 00")
+            print ("-->%s<--" % ans)
     return
 
 def ReadTagAndBlocks(fd):
@@ -181,42 +183,42 @@ def ReadTagAndBlocks(fd):
     # Only works for HS/1 as other tags don't support it
     notag = True
 
-    print "Reading Tag Data Blocks 00, 01, 02, 03 ......."
+    print ("Reading Tag Data Blocks 00, 01, 02, 03 .......")
 
-    print "Waiting for a tag ...."
+    print ("Waiting for a tag ....")
 
     notag = True
     while notag:
         WaitForCTS()
-        # print "Sending Tag Read Blocks command" #Added for Debug purposes
+        # print ("Sending Tag Read Blocks command")  #Added for Debug purposes
         wiringpi2.serialPutchar(fd, 0x74)
         wiringpi2.serialPutchar(fd, 0x04)
         time.sleep(0.1)
         ans = ReadInt(fd)
-        # print "Tag Status: %s" % hex(ans) #Added for Debug purposes
+        # print ("Tag Status: %s" % hex(ans))    #Added for Debug purposes
         if ans == int("0xD6", 16):
             # Tag present and read
             notag = False
-            # print "Tag Present" #Added for Debug purposes
+            # print ("Tag Present")  #Added for Debug purposes
             ans = ReadText(fd)
-            print "Blocks 00, 01, 02, 03"
-            print "-->%s<--" % ans
+            print ("Blocks 00, 01, 02, 03")
+            print ("-->%s<--" % ans)
     return
 
 def ChangeReaderOpMode(fd):
     # prvide an additional menu to choose the type of tag to be read and set the reader accordingly
-    print "Setting Reader Operating Tag Mode......."
+    print ("Setting Reader Operating Tag Mode.......")
 
     desc = ""
     choice = ""
     while choice == "":
-        print "*********************************************"
-        print "a - Hitag H2"
-        print "b - Hitag H1/S (factory default)"
-        print "c - EM/MC2000"
+        print ("*********************************************")
+        print ("a - Hitag H2")
+        print ("b - Hitag H1/S (factory default)")
+        print ("c - EM/MC2000")
         # promt the user for a choice
         choice = raw_input("Please select tag type .....:")
-        # print "choice: %s" %choice # Added for Debug purposes
+        # print ("choice: %s" % choice)  # Added for Debug purposes
         
         if choice =="a" or choice == "A":
             desc = "Hitag H2"
@@ -234,43 +236,43 @@ def ChangeReaderOpMode(fd):
             wiringpi2.serialPutchar(fd, 0x76)
             wiringpi2.serialPutchar(fd, 0x03) # 0x03 = EM/MC2000
         else:
-            print "Invalid option.  Please try again..."
+            print ("Invalid option.  Please try again...")
             choice = ""
 
     time.sleep(0.1)
     ans = ReadInt(fd)
-    # print "Tag Status: %s" % hex(ans) #Added for Debug purposes
+    # print ("Tag Status: %s" % hex(ans)) #Added for Debug purposes
     if ans == int("0xC0", 16):
         # Positive result
-        print "Reader Operating Mode %s ......" % desc
+        print ("Reader Operating Mode %s ......" % desc)
     else:
-        print "Unexpected response %s" % hex(ans)
+        print ("Unexpected response %s" % hex(ans))
         # clear the buffer
         wiringpi2.serialFlush(fd)
 
 def HelpText():
     # show the help text
-    print "**************************************************************************\n"
-    print "Available commands: -"
-    print "z - Display firmware version information"
-    print "S - Acknowledge presence of Tag"
-    print "F - Perform a Factory Reset"
-    print "P - Program EEPROM Polling delay"
-    print "v - Select reader operating mode"
-    print "R - Read Tag and PAGE 00 data"
-    print "r - Read Tag and BLOCK 00-03 data"
-    print "e - Exit program"
+    print ("**************************************************************************\n")
+    print ("Available commands: -")
+    print ("z - Display firmware version information")
+    print ("S - Acknowledge presence of Tag")
+    print ("F - Perform a Factory Reset")
+    print ("P - Program EEPROM Polling delay")
+    print ("v - Select reader operating mode")
+    print ("R - Read Tag and PAGE 00 data")
+    print ("r - Read Tag and BLOCK 00-03 data")
+    print ("e - Exit program")
 
 
 
 # main code loop
 
-print "Bostin Technology Ltd"
-print "Cogniot Products"
-print "PirFlx"
-print ""
-print "Press h for help"
-print ""
+print ("Bostin Technology Ltd")
+print ("Cogniot Products")
+print ("PirFlx")
+print ("")
+print ("Press h for help")
+print ("")
 
 comms = RFIDSetup()
 
