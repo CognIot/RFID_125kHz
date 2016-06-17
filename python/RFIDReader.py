@@ -1,25 +1,38 @@
 #/usr/bin/env python
 
-########################### 125KHz RFID Reader python script ############################
-# Program to read the commands from the Bostin Technology 125KHz RFID Tag Reader
-# Available commands:
-# z - Display firmware version information
-# S - Acknowledge presence of Tag
-# F - Perform a Factory Reset
-# P - Program EEPROM Polling delay
-# v - Select reader operating mode
-# R - Read Tag and PAGE 00 data
-# r - Read Tag and BLOCK 00-03 data
-# e - Exit program
+"""
+Example code on accessing the RFID Reader 125kHz and reading data from tags
 
+The code here is experimental, and is not intended to be used
+in a production environment. It demonstrates the basics of what is
+Required to get the Raspberry Pi receiving RFID data and configuring
+the RFID Reader parameters.
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation as version 2 of the License.
+
+For more informaiton refer to www.cogniot.eu
+
+Available commands:
+  z - Display firmware version information
+  S - Acknowledge presence of Tag
+  F - Perform a Factory Reset
+  P - Program EEPROM Polling delay
+  v - Select reader operating mode
+  R - Read Tag and PAGE 00 data
+  r - Read Tag and BLOCK 00-03 data
+  e - Exit program
+  
+"""
 
 import wiringpi2
 import time
 import sys
 
 # set for GPIO Pin to use based on the jumper connection
-# GPIO_PIN = 1 # Jumper 1, also known as GPIO18
-GPIO_PIN = 0 # Jumper 2, also known as GPIO17
+GPIO_PIN = 1 # Jumper 1, also known as GPIO18
+# GPIO_PIN = 0 # Jumper 2, also known as GPIO17
 # GPIO_PIN = 2 # Jumper 3, also known as GPIO21 (Rv 1) or GPIO27 (Rv 2)
 # GPIO_PIN = 3 # Jumper 4, also known as GPIO22
 

@@ -15,6 +15,8 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation as version 2 of the License.
  *
+ * For more informaiton refer to www.cogniot.eu
+ * 
  */
 
 #include <stdio.h>
@@ -27,8 +29,8 @@
 
 
 // set for GPIO Pin to use based on the jumper connection
-// #define GPIO_PIN 1       // Jumper 1, also known as GPIO18
-#define GPIO_PIN 0          // Jumper 2, also known as GPIO17
+#define GPIO_PIN 1       // Jumper 1, also known as GPIO18
+// #define GPIO_PIN 0          // Jumper 2, also known as GPIO17
 // #define GPIO_PIN 2       // Jumper 3, also known as GPIO21 (Rv 1) or GPIO27 (Rv 2)
 // #define GPIO_PIN 3       // Jumper 4, also known as GPIO22
 
