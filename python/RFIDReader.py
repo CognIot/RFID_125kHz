@@ -26,7 +26,7 @@ Available commands:
   
 """
 
-import wiringpi2
+import wiringpi as wiringpi2
 import time
 import sys
 
