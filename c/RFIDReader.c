@@ -112,7 +112,7 @@ int main ()
 
 
 
-  if ((fd = serialOpen ("/dev/ttyAMA0", 9600)) < 0)  // Try to open a connection to the serial port
+  if ((fd = serialOpen ("/dev/serial0", 9600)) < 0)  // Try to open a connection to the serial port
   {
    fprintf (stderr, "Unable to open serial device: %s\n", strerror (errno)) ;
     return 1 ;
