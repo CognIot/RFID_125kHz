@@ -74,7 +74,7 @@ def RFIDSetup():
     # set the GPIO pin for input
     wiringpi2.pinMode(GPIO_PIN, 0)
     # open the serial port and set the speed accordingly
-    fd = wiringpi2.serialOpen('/dev/ttyAMA0', 9600)
+    fd = wiringpi2.serialOpen('/dev/serial0', 9600)
 
     # clear the serial buffer of any left over data
     wiringpi2.serialFlush(fd)
