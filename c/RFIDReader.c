@@ -389,7 +389,7 @@ do {
 		{
 			WaitForCTS();
 
-	        serialPutchar(fd, 0x74);
+	        serialPutchar(fd, 0x72);
  			serialPutchar(fd, 0x04); // Tag blocks 00-003 - only H1/S should work here
 
 			delay(100); // ??? Need to wait otherwise the command does not work

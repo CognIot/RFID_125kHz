@@ -156,9 +156,9 @@ def ReadTagPageZero(fd):
     # read the tag page 00 command
     notag = True
 
-    print ("Reading Tag Data Page 00.......")
+    print ("\nReading Tag Data Page 00.......")
 
-    print ("Waiting for a tag ....")
+    print ("\nWaiting for a tag ....")
 
     notag = True
     while notag:
@@ -174,8 +174,8 @@ def ReadTagPageZero(fd):
             notag = False
             # print ("Tag Present") #Added for Debug purposes
             ans = ReadText(fd)
-            print ("Page 00")
-            print ("-->%s<--" % ans)
+            print ("\nPage 00")
+            print ("-->%s<--\n\n" % ans)
     return
 
 def ReadTagAndBlocks(fd):
@@ -183,15 +183,15 @@ def ReadTagAndBlocks(fd):
     # Only works for HS/1 as other tags don't support it
     notag = True
 
-    print ("Reading Tag Data Blocks 00, 01, 02, 03 .......")
+    print ("\nReading Tag Data Blocks 00, 01, 02, 03 .......")
 
-    print ("Waiting for a tag ....")
+    print ("\nWaiting for a tag ....")
 
     notag = True
     while notag:
         WaitForCTS()
         # print ("Sending Tag Read Blocks command")  #Added for Debug purposes
-        wiringpi2.serialPutchar(fd, 0x74)
+        wiringpi2.serialPutchar(fd, 0x72)
         wiringpi2.serialPutchar(fd, 0x04)
         time.sleep(0.1)
         ans = ReadInt(fd)
@@ -199,10 +199,10 @@ def ReadTagAndBlocks(fd):
         if ans == int("0xD6", 16):
             # Tag present and read
             notag = False
-            # print ("Tag Present")  #Added for Debug purposes
+            #p rint ("Tag Present")  #Added for Debug purposes
             ans = ReadText(fd)
-            print ("Blocks 00, 01, 02, 03")
-            print ("-->%s<--" % ans)
+            print ("\nBlocks 00, 01, 02, 03")
+            print ("-->%s<--\n\n" % ans)
     return
 
 def ChangeReaderOpMode(fd):
@@ -215,7 +215,7 @@ def ChangeReaderOpMode(fd):
         print ("*********************************************")
         print ("a - Hitag H2")
         print ("b - Hitag H1/S (factory default)")
-        print ("c - EM/MC2000")
+        print ("c - EM/MC2000\n\n")
         # promt the user for a choice
         choice = input("Please select tag type .....:")
         # print ("choice: %s" % choice)  # Added for Debug purposes
@@ -261,7 +261,7 @@ def HelpText():
     print ("v - Select reader operating mode")
     print ("R - Read Tag and PAGE 00 data")
     print ("r - Read Tag and BLOCK 00-03 data")
-    print ("e - Exit program")
+    print ("e - Exit program\n\n")
 
 
 
@@ -275,6 +275,8 @@ print ("Press h for help")
 print ("")
 
 comms = RFIDSetup()
+
+HelpText()
 
 while True:
     choice = input ("Select Menu Option:")
