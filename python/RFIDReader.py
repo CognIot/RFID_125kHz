@@ -1,4 +1,4 @@
-#/usr/bin/env python3
+#!/usr/bin/env python3
 
 """
 Example code on accessing the RFID Reader 125kHz and reading data from tags
@@ -22,6 +22,7 @@ Available commands:
   v - Select reader operating mode
   R - Read Tag and PAGE 00 data
   r - Read Tag and BLOCK 00-03 data
+  T - Test Mode (can be run using command line argument --testmode)
   e - Exit program
   
 """
@@ -29,6 +30,8 @@ Available commands:
 import wiringpi as wiringpi2
 import time
 import sys
+import argparse
+#import msvcrt
 
 # set for GPIO Pin to use based on the jumper connection
 GPIO_PIN = 1 # Jumper 1, also known as GPIO18
@@ -113,6 +116,22 @@ def ReadTagStatus(fd):
     print ("Tag Status: %s" % hex(ans))
     return
 
+def TagPresent(fd):
+    # read the RFID reader until a tag is present
+    notag = True
+    while notag:
+        WaitForCTS()
+        # print ("Sending Tag Status Command")   #Added for Debug purposes
+        wiringpi2.serialPuts(fd,"S")
+        time.sleep(0.1)
+        ans = ReadInt(fd)
+        # print ("Tag Status: %s" % hex(ans))    # Added for Debug purposes
+        if ans == int("0xD6", 16):
+            # D6 is a positive response meaning tag present and read
+            notag = False
+    print ("\nTag Present\n")
+    return
+    
 def FactoryReset(fd):
     # send the factory reset command
     WaitForCTS()
@@ -205,39 +224,28 @@ def ReadTagAndBlocks(fd):
             print ("-->%s<--\n\n" % ans)
     return
 
-def ChangeReaderOpMode(fd):
-    # prvide an additional menu to choose the type of tag to be read and set the reader accordingly
-    print ("Setting Reader Operating Tag Mode.......")
-
+def SetReaderMode(fd, choice):
+    # Given the mode choice, set the mode
     desc = ""
-    choice = ""
-    while choice == "":
-        print ("*********************************************")
-        print ("a - Hitag H2")
-        print ("b - Hitag H1/S (factory default)")
-        print ("c - EM/MC2000\n\n")
-        # promt the user for a choice
-        choice = input("Please select tag type .....:")
-        # print ("choice: %s" % choice)  # Added for Debug purposes
-        
-        if choice =="a" or choice == "A":
-            desc = "Hitag H2"
-            WaitForCTS()
-            wiringpi2.serialPutchar(fd, 0x76)
-            wiringpi2.serialPutchar(fd, 0x01) # 0x01 = H2
-        elif choice =="b" or choice == "B":
-            desc = "Hitag H1/S"
-            WaitForCTS()
-            wiringpi2.serialPutchar(fd, 0x76)
-            wiringpi2.serialPutchar(fd, 0x02) # 0x01 = H1/S
-        elif choice =="c" or choice == "C":
-            desc = "Em / MC2000"
-            WaitForCTS()
-            wiringpi2.serialPutchar(fd, 0x76)
-            wiringpi2.serialPutchar(fd, 0x03) # 0x03 = EM/MC2000
-        else:
-            print ("Invalid option.  Please try again...")
-            choice = ""
+    if choice =="a" or choice == "A":
+        desc = "Hitag H2"
+        WaitForCTS()
+        wiringpi2.serialPutchar(fd, 0x76)
+        wiringpi2.serialPutchar(fd, 0x01) # 0x01 = H2
+    elif choice =="b" or choice == "B":
+        desc = "Hitag H1/S"
+        WaitForCTS()
+        wiringpi2.serialPutchar(fd, 0x76)
+        wiringpi2.serialPutchar(fd, 0x02) # 0x01 = H1/S
+    elif choice =="c" or choice == "C":
+        desc = "Em / MC2000"
+        WaitForCTS()
+        wiringpi2.serialPutchar(fd, 0x76)
+        wiringpi2.serialPutchar(fd, 0x03) # 0x03 = EM/MC2000
+    else:
+        print ("Invalid option.\n")
+        choice = ""
+        return
 
     time.sleep(0.1)
     ans = ReadInt(fd)
@@ -249,7 +257,58 @@ def ChangeReaderOpMode(fd):
         print ("Unexpected response %s" % hex(ans))
         # clear the buffer
         wiringpi2.serialFlush(fd)
+    return
+    
+def UserChangeReaderOpMode(fd):
+    # prvide an additional menu to choose the type of tag to be read and set the reader accordingly
+    print ("Setting Reader Operating Tag Mode.......\n")
 
+    choice = ""
+    print ("*********************************************")
+    print ("a - Hitag H2")
+    print ("b - Hitag H1/S (factory default)")
+    print ("c - EM/MC2000\n\n")
+    # promt the user for a choice
+    choice = input("Please select tag type .....:")
+    # print ("choice: %s" % choice)  # Added for Debug purposes
+    
+    SetReaderMode(fd,choice)
+    return
+
+def TestMode(fd):
+    """ Routine to check the RFID module works
+    Runs the following checks
+    - Press any key to continue
+    - Verify board type
+    - Select tag mode A
+        - Check tag range
+    - Repeat for modes B and C
+    - Set to default mode C
+        - any key to change """
+    key = input("\nHit ENTER to Start test ...")
+    #ReadVersion(fd)
+    for modes in ("A","B","C"):
+        print("Present tag of mode %s" % modes)
+        SetReaderMode(fd,modes)
+        TagPresent(fd)
+    key = input("\nHit ENTER to set back to default mode,\n else press A,B or C & Enter to set specific mode")
+    if key.upper() in ("A","B","C"):
+        print("\nSetting Mode :%s\n" % key.upper())
+        FactoryReset(fd)
+        SetReaderMode(fd,key.upper())
+    else:
+        print("\nSetting Default (C) Mode\n")
+        FactoryReset(fd)
+        SetReaderMode(fd,"C")
+    return
+    
+def ArgsParser():
+    # Setup and read the arguments back from the command line
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--testmode", help="Run in Test Mode", action="store_true")
+    args = parser.parse_args()
+    return args.testmode
+    
 def HelpText():
     # show the help text
     print ("**************************************************************************\n")
@@ -261,6 +320,7 @@ def HelpText():
     print ("v - Select reader operating mode")
     print ("R - Read Tag and PAGE 00 data")
     print ("r - Read Tag and BLOCK 00-03 data")
+    print ("T - Test Mode")
     print ("e - Exit program\n\n")
 
 
@@ -275,6 +335,14 @@ print ("Press h for help")
 print ("")
 
 comms = RFIDSetup()
+
+test_mode = ArgsParser()
+if test_mode:
+    print("\n\nEntering Test Mode\n")
+    time.sleep(0.5)
+    TestMode(comms)
+    sys.exit(1)
+
 
 HelpText()
 
@@ -292,11 +360,13 @@ while True:
     elif choice == "P":
         SetPollingDalay(comms)
     elif choice == "v":
-        ChangeReaderOpMode(comms)
+        UserChangeReaderOpMode(comms)
     elif choice == "R":
         ReadTagPageZero(comms)
     elif choice == "r":
         ReadTagAndBlocks(comms)
+    elif choice == "T":
+        TestMode(comms)
     elif choice == "E" or choice == "e":
         sys.exit()
 
