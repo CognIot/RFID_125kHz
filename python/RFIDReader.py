@@ -218,7 +218,7 @@ def ReadTagAndBlocks(fd):
         if ans == int("0xD6", 16):
             # Tag present and read
             notag = False
-            #p rint ("Tag Present")  #Added for Debug purposes
+            #print ("Tag Present")  #Added for Debug purposes
             ans = ReadText(fd)
             print ("\nBlocks 00, 01, 02, 03")
             print ("-->%s<--\n\n" % ans)
@@ -249,7 +249,7 @@ def SetReaderMode(fd, choice):
 
     time.sleep(0.1)
     ans = ReadInt(fd)
-    # print ("Tag Status: %s" % hex(ans)) #Added for Debug purposes
+    print ("Tag Status: %s" % hex(ans)) #Added for Debug purposes
     if ans == int("0xC0", 16):
         # Positive result
         print ("Reader Operating Mode %s ......" % desc)
@@ -287,7 +287,7 @@ def TestMode(fd):
         - any key to change """
     key = input("\nHit ENTER to Start test ...")
     #ReadVersion(fd)
-    for modes in ("A","B","C"):
+    for modes in ("B","C"):
         print("Present tag of mode %s" % modes)
         SetReaderMode(fd,modes)
         TagPresent(fd)
