@@ -21,11 +21,15 @@ Available commands:
   P - Program EEPROM Polling delay
   v - Select reader operating mode
   R - Read Tag and PAGE 00 data
-  r - Read Tag and BLOCK 00-03 data
-  W - Write Tag and PAGE 00 data
-  w - Write Tag and BLOCK 00-03 data
+  r - Read Tag and BLOCK 04 data
+  W - Write Tag and PAGE of data
+  w - Write Tag and BLOCK of data
+  A - Read All Pages 0 - 3f
+  a - Read All blocks 0 - 16
   T - Test Mode (can be run using command line argument --testmode)
   e - Exit program
+
+
   
 """
 
@@ -286,8 +290,8 @@ def CaptureDataToWrite(qty):
     return to_write
 
 def CaptureBlockPageNo():
-    # provide an additional menu to capture the blcok or page number
-    # returns the blcok / page to be written
+    # provide an additional menu to capture the block or page number
+    # returns the block / page to be written
     
     to_write = 0
     choice = ""
@@ -298,7 +302,7 @@ def CaptureBlockPageNo():
     while (success == False):
         # Loop round getting, checking and saving the byte
         # promt the user for a choice
-        choice = input("Please enter block / page to write")
+        choice = input("Please enter block / page to write.....:")
         try:
             # value entered is a number, so process it
             # print ("Value read:%d" % int(choice))            # added for debug purposes
@@ -315,26 +319,26 @@ def CaptureBlockPageNo():
     
     return to_write
     
-def WriteTagPage(fd,page):
-    # write to the tag page 00 command
+def WriteTagPage(fd):
+    # write to the tag page, user selecting the page
     notag = True
     block = []
     pagesize = 4
-
-    print ("\nWriting Tag Data Page %s......." % page)
 
     page = CaptureBlockPageNo()
 
     block = CaptureDataToWrite(pagesize)
 
-    print("Data to write:%s" % block)         #Added for Debug purposes
+    print ("\nWriting Tag Data Page %s......." % page)
+    
+    #print("Data to write:%s" % block)         #Added for Debug purposes
     
     print ("\nWaiting for a tag ....")
 
     notag = True
     while notag:
         WaitForCTS()
-        print ("Sending Tag Write Page Command")    #Added for Debug purposes
+        #print ("Sending Tag Write Page Command")    #Added for Debug purposes
         wiringpi2.serialPutchar(fd, 0x57)
         wiringpi2.serialPutchar(fd, page)           # Write to page four
         wiringpi2.serialPutchar(fd, block[0])
@@ -343,12 +347,12 @@ def WriteTagPage(fd,page):
         wiringpi2.serialPutchar(fd, block[3])
         time.sleep(0.1)
         ans = ReadInt(fd)
-        print ("Tag Status: %s" % hex(ans))    #Added for Debug purposes
+        #print ("Tag Status: %s" % hex(ans))    #Added for Debug purposes
         if ans == int("0xD6", 16):
             # Tag present and read
             notag = False
-            print ("Tag Present") #Added for Debug purposes
-            ReadTagPageDefaultZero(fd,4)
+            #print ("Tag Present") #Added for Debug purposes
+            ReadTagPageDefaultZero(fd,page)
     return
 
 def WriteTagAndBlocks(fd):
@@ -371,18 +375,18 @@ def WriteTagAndBlocks(fd):
     notag = True
     while notag:
         WaitForCTS()
-        print ("Sending Tag Write Blocks command and data")  #Added for Debug purposes
+        #print ("Sending Tag Write Blocks command and data")  #Added for Debug purposes
         wiringpi2.serialPutchar(fd, 0x72)
         wiringpi2.serialPutchar(fd, blockno)
         for f in block:
             wiringpi2.serialPutchar(fd, f)
         time.sleep(0.1)
         ans = ReadInt(fd)
-        print ("Tag Status: %s" % hex(ans))    #Added for Debug purposes
+        #print ("Tag Status: %s" % hex(ans))    #Added for Debug purposes
         if ans == int("0xD6", 16):
             # Tag present and read
             notag = False
-            print ("Tag Present")  #Added for Debug purposes
+            #print ("Tag Present")  #Added for Debug purposes
             ans = ReadText(fd)
 
             ReadTagAndBlocks(fd, blockno, False)
