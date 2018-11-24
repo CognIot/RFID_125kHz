@@ -22,6 +22,8 @@ Available commands:
   v - Select reader operating mode
   R - Read Tag and PAGE 00 data
   r - Read Tag and BLOCK 00-03 data
+  W - Write Tag and PAGE 00 data
+  w - Write Tag and BLOCK 00-03 data
   T - Test Mode (can be run using command line argument --testmode)
   e - Exit program
   
@@ -31,7 +33,7 @@ import wiringpi as wiringpi2
 import time
 import sys
 import argparse
-#import msvcrt
+import numbers
 
 # set for GPIO Pin to use based on the jumper connection
 GPIO_PIN = 1 # Jumper 1, also known as GPIO18
@@ -171,11 +173,11 @@ def SetPollingDalay(fd):
         wiringpi2.serialFlush(fd)
     return
 
-def ReadTagPageZero(fd):
+def ReadTagPageDefaultZero(fd,page=00):
     # read the tag page 00 command
     notag = True
 
-    print ("\nReading Tag Data Page 00.......")
+    print ("\nReading Tag Data Page %d......." % page)
 
     print ("\nWaiting for a tag ....")
 
@@ -184,7 +186,7 @@ def ReadTagPageZero(fd):
         WaitForCTS()
         # print ("Sending Tag Read Page Command")    #Added for Debug purposes
         wiringpi2.serialPutchar(fd, 0x52)
-        wiringpi2.serialPutchar(fd, 0x00)
+        wiringpi2.serialPutchar(fd, page)
         time.sleep(0.1)
         ans = ReadInt(fd)
         # print ("Tag Status: %s" % hex(ans))    #Added for Debug purposes
@@ -193,16 +195,32 @@ def ReadTagPageZero(fd):
             notag = False
             # print ("Tag Present") #Added for Debug purposes
             ans = ReadText(fd)
-            print ("\nPage 00")
-            print ("-->%s<--\n\n" % ans)
+            print ("\nPage %d" % page)
+            print ("-->%s<--" % ans)
+            print("++>", end="")
+            for f in ans:
+                print(" %d" % ord(f), end="")
+            print(" <++")
     return
 
-def ReadTagAndBlocks(fd):
+def ReadAllPages(fd):
+    # Cycle through and read all pages available
+
+    print("Reading all Pages")
+    for f in range (0,0x3f):
+        ReadTagPageDefaultZero(fd, f)
+    return
+
+def ReadTagAndBlocks(fd, block=4, enter=False):
     # read the tag and all blocks from within it
     # Only works for HS/1 as other tags don't support it
     notag = True
 
-    print ("\nReading Tag Data Blocks 00, 01, 02, 03 .......")
+    if enter:
+        # enter flag determines if user is prompted for an entry
+        block = CaptureBlockPageNo()
+    
+    print ("\nReading Tag Data Block %x ......." % block)
 
     print ("\nWaiting for a tag ....")
 
@@ -211,7 +229,7 @@ def ReadTagAndBlocks(fd):
         WaitForCTS()
         # print ("Sending Tag Read Blocks command")  #Added for Debug purposes
         wiringpi2.serialPutchar(fd, 0x72)
-        wiringpi2.serialPutchar(fd, 0x04)
+        wiringpi2.serialPutchar(fd, block)
         time.sleep(0.1)
         ans = ReadInt(fd)
         # print ("Tag Status: %s" % hex(ans))    #Added for Debug purposes
@@ -220,8 +238,154 @@ def ReadTagAndBlocks(fd):
             notag = False
             #print ("Tag Present")  #Added for Debug purposes
             ans = ReadText(fd)
-            print ("\nBlocks 00, 01, 02, 03")
-            print ("-->%s<--\n\n" % ans)
+            print ("\nBlocks %x" % block)
+            print ("-->%s<--" % ans)
+            print("++>", end="")
+            for f in ans:
+                print(" %d" % ord(f), end="")
+            print(" <++")
+    return
+
+def ReadAllBlocks(fd):
+    #read throught all the blocks
+
+    print("Reading all blocks")
+    for f in range (0, 16):
+        ReadTagAndBlocks(fd,f, False)
+    return
+  
+
+def CaptureDataToWrite(qty):
+    # provide an additional menu to capture the data to be written to the tag
+    # returns the bytes to be written
+    
+    to_write = []
+    choice = ""
+    counter = 0
+    print ("*********************************************")
+    print ("Please enter %d bytes of data to be written" % qty)
+
+    while (counter < qty):
+        # Loop round getting, checking and saving the byte
+        # promt the user for a choice
+        choice = input("Please enter byte %d to write (0 - 255).....:" % counter)
+        try:
+            # value entered is a number, so process it
+            # print ("Values read:%d" % int(choice))            # added for debug purposes
+            if int(choice) > 0 and int(choice) < 255:
+                to_write.append(int(choice))
+                counter = counter + 1
+                # print("Value Captured")           # added for debug purposes
+            else:
+                print("Please ensure the number is between 0 and 255")
+        except:
+            print("Please ensure you enter a number between 0 and 255")
+
+    # print ("data caltured:%s" % to_write)  # Added for Debug purposes
+    
+    return to_write
+
+def CaptureBlockPageNo():
+    # provide an additional menu to capture the blcok or page number
+    # returns the blcok / page to be written
+    
+    to_write = 0
+    choice = ""
+    success = False 
+    print ("*********************************************")
+    print ("Please enter the block / page to be written")
+
+    while (success == False):
+        # Loop round getting, checking and saving the byte
+        # promt the user for a choice
+        choice = input("Please enter block / page to write")
+        try:
+            # value entered is a number, so process it
+            # print ("Value read:%d" % int(choice))            # added for debug purposes
+            if int(choice) > 0 and int(choice) < 255:
+                to_write = int(choice)
+                success = True
+                # print("Value Captured")           # added for debug purposes
+            else:
+                print("Please ensure the number is between 0 and 255")
+        except:
+            print("Please ensure you enter a number between 0 and 255")
+
+    # print ("data captured:%s" % to_write)  # Added for Debug purposes
+    
+    return to_write
+    
+def WriteTagPage(fd,page):
+    # write to the tag page 00 command
+    notag = True
+    block = []
+    pagesize = 4
+
+    print ("\nWriting Tag Data Page %s......." % page)
+
+    page = CaptureBlockPageNo()
+
+    block = CaptureDataToWrite(pagesize)
+
+    print("Data to write:%s" % block)         #Added for Debug purposes
+    
+    print ("\nWaiting for a tag ....")
+
+    notag = True
+    while notag:
+        WaitForCTS()
+        print ("Sending Tag Write Page Command")    #Added for Debug purposes
+        wiringpi2.serialPutchar(fd, 0x57)
+        wiringpi2.serialPutchar(fd, page)           # Write to page four
+        wiringpi2.serialPutchar(fd, block[0])
+        wiringpi2.serialPutchar(fd, block[1])
+        wiringpi2.serialPutchar(fd, block[2])
+        wiringpi2.serialPutchar(fd, block[3])
+        time.sleep(0.1)
+        ans = ReadInt(fd)
+        print ("Tag Status: %s" % hex(ans))    #Added for Debug purposes
+        if ans == int("0xD6", 16):
+            # Tag present and read
+            notag = False
+            print ("Tag Present") #Added for Debug purposes
+            ReadTagPageDefaultZero(fd,4)
+    return
+
+def WriteTagAndBlocks(fd):
+    # write the tag and all blocks from within it
+    # Only works for HS/1 as other tags don't support it
+    notag = True
+    block = []
+    blockno = 0
+    blocksize = 16
+
+    blockno = CaptureBlockPageNo()
+    block = CaptureDataToWrite(blocksize)
+
+    print ("\nWriting Tag Data Block %d ......." % blockno)
+
+    # print("Data to write:%s" % block)         #Added for Debug purposes
+
+    print ("\nWaiting for a tag ....")
+
+    notag = True
+    while notag:
+        WaitForCTS()
+        print ("Sending Tag Write Blocks command and data")  #Added for Debug purposes
+        wiringpi2.serialPutchar(fd, 0x72)
+        wiringpi2.serialPutchar(fd, blockno)
+        for f in block:
+            wiringpi2.serialPutchar(fd, f)
+        time.sleep(0.1)
+        ans = ReadInt(fd)
+        print ("Tag Status: %s" % hex(ans))    #Added for Debug purposes
+        if ans == int("0xD6", 16):
+            # Tag present and read
+            notag = False
+            print ("Tag Present")  #Added for Debug purposes
+            ans = ReadText(fd)
+
+            ReadTagAndBlocks(fd, blockno, False)
     return
 
 def SetReaderMode(fd, choice):
@@ -319,7 +483,11 @@ def HelpText():
     print ("P - Program EEPROM Polling delay")
     print ("v - Select reader operating mode")
     print ("R - Read Tag and PAGE 00 data")
-    print ("r - Read Tag and BLOCK 00-03 data")
+    print ("r - Read Tag and BLOCK 04 data")
+    print ("W - Write Tag and PAGE of data")
+    print ("w - Write Tag and BLOCK of data")
+    print ("A - Read All Pages 0 - 3f")
+    print ("a - Read All blocks 0 - 16")
     print ("T - Test Mode")
     print ("e - Exit program\n\n")
 
@@ -362,9 +530,17 @@ while True:
     elif choice == "v":
         UserChangeReaderOpMode(comms)
     elif choice == "R":
-        ReadTagPageZero(comms)
+        ReadTagPageDefaultZero(comms)
     elif choice == "r":
         ReadTagAndBlocks(comms)
+    elif choice == "W":
+        WriteTagPage(comms)
+    elif choice == "w":
+        WriteTagAndBlocks(comms)
+    elif choice == "A":
+        ReadAllPages(comms)
+    elif choice == "a":
+        ReadAllBlocks(comms)
     elif choice == "T":
         TestMode(comms)
     elif choice == "E" or choice == "e":
