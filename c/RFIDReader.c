@@ -15,7 +15,7 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation as version 2 of the License.
  *
- * For more informaiton refer to www.cogniot.eu
+ * For more information refer to www.cogniot.eu
  * 
  */
 
